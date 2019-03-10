@@ -225,6 +225,19 @@ Transparency logs.
      zone is consider to be a delegation-only zone.
      </t>
      </section>
+
+     <section title="Allowed record types for labels inside
+                     DELEGATION-ONLY zones">
+                     <t>Some labels within a DELEGATION_ONLY marked
+                     zone must be published by a parent in order to
+                     properly sign its zone and its child's referral
+                     data.  Thus, any published and signed zone data
+                     deeper than the zone apex MUST only include dns
+                     TYPEs of glue (NS, A and AAAA), DS, NSEC and
+                     NSEC3 records.</t>
+     </section>
+
+
 </section>
 
 <section title="Operational Considerations" anchor="operations">
@@ -240,6 +253,15 @@ flag. Another solution for such TLDs is to create delegations for these
 child zones with the same or different DNSKEY as used in the parent
 zone itself.
 </t>
+<t>Zones setting the DELEGATION_ONLY flag that also publish records at
+the zone apex with DNS targets as parameters (NS, MX, SRV, ...) that
+also need corresponding records for the targets with associated data
+(A, AAAA), those targets must be placed into sub-zones.  For example,
+if example.org desires to set the DELEGATION_ONLY flag, it must places
+its NS server address records into sub-zones (for example) so that the
+NS records for example.com might be ns1.nic.example.com instead of
+ns1.example.com directly, since the DELEGATION_ONLY flag would
+prohibit the zone from publishing an A record for ns1.example.com.</t>
 <t>
 If a zone is publishing glue records for a number of zones, and the
 zone that contains the authoritative records for this glue is deleted,
@@ -276,7 +298,7 @@ the SEP bit set. It MUST be ignored on DNSKEY's without the SEP bit set.
 </t>
 <t>This DELEGATION_ONLY mechanism is not designed to completely foil
 attacks (since parent's can simply change a child's referral data),
-but rather to empower transparency logging mechanisms.
+but rather to empower transparency logging mechanisms.</t>
 </section>
 
 <section title="Privacy Considerations" anchor="privacy">
