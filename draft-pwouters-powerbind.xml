@@ -34,7 +34,7 @@
      </address>
     </author>
 
-    <date year="2019" />
+    <date year="2020" />
 
     <area>Security</area>
 
@@ -96,8 +96,8 @@ DELEGATION_ONLY policy as BOGUS.
 
 <section title="The Deep Link State problem">
   <t> The hierarchical model of DNS and DNSSEC (<xref
-  target="RFC1034">, <xref target="RFC1035">, <xref
-  target="RFC4033"/>, <xref target="RFC4034"/> and <xref
+  target="RFC1034" />, <xref target="RFC1035" />, <xref
+  target="RFC4033" />, <xref target="RFC4034" /> and <xref
   target="RFC4035"/>) comes with the property that a zone at one point
   in the hierarchy can define, and therefor override, everything below
   it in the DNS tree. And this is possible to achieve on a per-client
@@ -124,7 +124,7 @@ DELEGATION_ONLY policy as BOGUS.
   <t>It is important to note that this "feature" has always been
   present.  Since the creation of the DNS, it has always been possible
   to server "split zones".  Specifically, it's not a fault of DNSSEC
-  -- DNSSEC was not designed to protect against this use case.
+  -- DNSSEC was not designed to protect against this use case.</t>
 
 <t>[Wes note: we should switch to .example as the TLD instead of
 including .org in the chain with a problem; leaving it as is for now]</t>
@@ -180,8 +180,8 @@ delegation only
 
 <section title="Affected parties and their roles">
 
-Upon deployment of this specification, the following parties would be
-potentially affected:
+<t>Upon deployment of this specification, the following parties would be
+potentially affected:</t>
 
 <t>Authoritative parent: If (and only if) an authoritative parent is
 a "delegation only" zone, it could generate a DNSKEY with the
@@ -220,7 +220,8 @@ and an unmarked DNSKEY would be considered suspicious.  Circumventing
 this through obfuscation would require the collusion of their parent
 as well.  Finally, a DELEGATION_ONLY flag DNSKEY for the root zone
 cannot be overridden easily, as it would require a trust anchor update
-in all validating resolvers.
+in all validating resolvers.</t>
+
 </section>
 
 </section>
@@ -465,6 +466,8 @@ Rick Lamb, Andrew McConachie and Sam Weiler.</t>
   <back>
 
 <references title="Normative References">
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.1034.xml"?>
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.1035.xml"?>
 <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
 <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.5011.xml"?>
 <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.4035.xml"?>
