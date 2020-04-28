@@ -96,28 +96,40 @@ DELEGATION_ONLY policy as BOGUS.
 
 <section title="The Deep Link State problem">
   <t> The hierarchical model of DNS and DNSSEC (<xref
+  target="RFC1034">, <xref target="RFC1035">, <xref
   target="RFC4033"/>, <xref target="RFC4034"/> and <xref
   target="RFC4035"/>) comes with the property that a zone at one point
   in the hierarchy can define, and therefor override, everything below
-  in the DNS tree. And it is possible to do this on a per-client
+  it in the DNS tree. And this is possible to achieve on a per-client
   basis.
   </t>
   <t> For example, the owner of the DNSSEC root key could generate a
   specially crafted zone file that ignores the intended NS records for
-  ".org" and "example.org" and instead place an AAAA record
+  ".org" and "example.org".  It could place a AAAA record for
   "www.example.org" directly into the specially crafted zone, with a
-  corresponding RRSIG signed by the root DNSKEY itself.  This
-  specially crafted zone could be served to specific customers in an
-  effort to subvert a portion of the DNS ecosystem.  Similarly, the
-  TLD "example" could circumvent company.example for certain
-  customers.  It is important to note that this can be done without
-  changing the upstream DS record or trust anchor -- the DNSKEY is
-  already in the trust path and is merely signing deeper DNS records
-  than the zone owner's clients may have expected it to sign.</t>
+  corresponding RRSIG signed by the root DNSKEY itself.  Validating
+  resolvers would find this record perfectly acceptable, as it was
+  signed by a key within the proper chain of trust (in this case, a
+  root DNSKEY).  This specially crafted zone could then even be served
+  to specific customers in an effort to subvert a portion of the DNS
+  ecosystem.</t>
+
+  <t>Similarly, the TLD "example" could circumvent
+  company.example for certain customers.  It is important to note that
+  this can be done without changing the upstream DS record or trust
+  anchor -- the DNSKEY is (again) already in the trust path and is merely
+  signing deeper DNS records than the zone owner's clients may have
+  expected it to sign.</t>
+
+  <t>It is important to note that this "feature" has always been
+  present.  Since the creation of the DNS, it has always been possible
+  to server "split zones".  Specifically, it's not a fault of DNSSEC
+  -- DNSSEC was not designed to protect against this use case.
 
 <t>[Wes note: we should switch to .example as the TLD instead of
 including .org in the chain with a problem; leaving it as is for now]</t>
 
+<!--
 <t> Old text that is hard to parse; leaving it for now maybe trying to
 wrap it in:
 Even if resolvers
@@ -130,17 +142,20 @@ addresses records (e.g. A and AAAA records), as well as records used
 for authentication (e.g. TLSA, SMIME, OPENPGPKEY, SSHP or IPSECKEY
 records).
  </t>
+-->
 
 <t>
 Exposing such targeted attacks would require transparency audit
 infrastructure similar to what is deployed for PKIX (<xref
-target="RFC6962" />).  However, it would need to log significantly
+target="RFC6962" />).  However, a DNSSEC version would need to log significantly
 more data, as all signed DNS data used by a DNSKEY must be recorded in
 order to prove that data signed by a parent zone's DNSKEY was out of
-expected policy. The very distributed nature of the DNS, and the
-typically frequent zone resigning rate frequency, makes such
+expected policy. The very distributed nature of the DNS combined with the
+typically frequent zone resigning rate makes such
 transparency logs prohibitively expensive and nearly impossible to
-operate. Additionally, it would require zone owners to expose all
+operate.</t>
+
+<t>Additionally, it would require zone owners to expose all
 their zone data to any public log operators, thereby introducing
 privacy implications and exposing all relevant DNS data to a public
 archive. Though this may be acceptable for some domains, such as the
@@ -149,30 +164,63 @@ delegation domains have legal implications that prohibit them from
 participating in such a system.
 </t>
 
-<t>Additionally, there is no signaling mechanism that lets validating
+<t>Furthermore, there is no signaling mechanism that lets validating
 resolvers know what must be logged.  Today there are over 1500 TLDs in
-the root zone, some of which may be considered delegation only while
-others may not be.  Meanwhile, the list of entries in the public
-suffix list contains over 8800 entries as well, 73 are wild-card
-entries (prefixed with a "*") indicating that all of their (unknown
-number of) children are public registration points.  In absence of a
-interoperable mechanism, that that provide by this draft, it is
-infeasible that a validating resolver or auditing log could know which
-of these zones are delegation-only without individual policy
-statements from each of them.
-[todo: xref psl] are expected to be delegation only
+the root zone, some of which may be considered delegation-only while
+others may not be.  At the time of this writing, the list of entries
+in the public suffix list contains over 8800 entries as well, 73 are
+wild-card entries (prefixed with a "*") indicating that all of their
+(unknown number of) children are public registration points.  In the
+absence of an interoperable mechanism (like this draft provides),
+it is infeasible that a validating resolver or auditing log could know
+which of these zones are delegation-only without individual policy
+statements from each of them.  [todo: xref psl] are expected to be
+delegation only
 </t>
 
-<section title="Parties involved and their roles">
+<section title="Affected parties and their roles">
 
-<t>Authoritative parent</t>
+Upon deployment of this specification, the following parties would be
+potentially affected:
 
-<t>Authoritative Child / Delegated Zone</t>
+<t>Authoritative parent: If (and only if) an authoritative parent is
+a "delegation only" zone, it could generate a DNSKEY with the
+DELEGATION_ONLY bit set, indicating a verifiable promise to the world
+that will not sign any records other than delegation records.</t>
 
-<t>Validating Resolver</t>
+<t>Authoritative Child / Delegated Zone: child zones existing
+underneath a marked delegation-only zone get the added benefit of
+knowing their parent will not (and cannot) sign DNS records within the
+child's portion of the DNS tree using the marked DNSKEY.</t>
 
-<t>DNSSEC Log (optional)</t>
+<t>Validating Resolver: A validating that supports verifying the
+DELEGATION_ONLY bit is capable of rejecting or discarding any data
+from an authoritative parent that incorrectly signs non-delegation
+records too low in the DNS tree.  If the validating resolver supports
+a (future-defined) DNSSEC transparency audit log as well, it may
+submit the appropriate data to a DNSSEC transparency log that
+appropriately tracks DNSSEC signatures.</t>
 
+<t>DNSSEC Transparency Log (optional): a DNSSEC transparency log would create a
+non-modifiable trace of log entries submitted to it, for public
+verification, similar to <xref target="RFC6962" />.  What it chooses
+to accept into its log might be only certain zone data, or any zone
+with a marked DNSKEY.</t>
+
+<t>Note that without a DNSSEC Log, the DELEGATION_ONLY bit is still
+useful per the discussion in the Validating Resolvers role: the
+resolver will reject incorrectly signed, non-delegation data.
+However, malicious parent zones are still capable of creating two (or
+more) DNSKEYs, one with the DELEGATION_ONLY flag and one without.
+However, they would also have to have and publish a DS record as well,
+which is likely detectable by any DNSSEC monitoring platforms,
+regardless of the existence of a DNSSEC Transparency Log.  Any zone
+with multiple DS records that link to both a DELEGATION_ONLY marked
+and an unmarked DNSKEY would be considered suspicious.  Circumventing
+this through obfuscation would require the collusion of their parent
+as well.  Finally, a DELEGATION_ONLY flag DNSKEY for the root zone
+cannot be overridden easily, as it would require a trust anchor update
+in all validating resolvers.
 </section>
 
 </section>
