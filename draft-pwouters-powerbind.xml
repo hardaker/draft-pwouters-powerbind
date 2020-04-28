@@ -163,6 +163,18 @@ statements from each of them.
 [todo: xref psl] are expected to be delegation only
 </t>
 
+<section title="Parties involved and their roles">
+
+<t>Authoritative parent</t>
+
+<t>Authoritative Child / Delegated Zone</t>
+
+<t>Validating Resolver</t>
+
+<t>DNSSEC Log (optional)</t>
+
+</section>
+
 </section>
 
 <section title="The DELEGATION_ONLY DNSKEY flag">
