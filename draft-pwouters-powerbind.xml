@@ -67,7 +67,7 @@ DELEGATION_ONLY policy as BOGUS.
         be almost exclusively delegation-only zones, there is
         currently no interoperable and automatable mechanism
         for auditing these zones to ensure they behave
-        as a delegation-only zone. This creates an attractive target
+        as a delegation-only zone. This creates a target
         for malicious use of these zones - either by their owners or
         through coercion. 
        </t>
