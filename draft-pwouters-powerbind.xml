@@ -65,24 +65,25 @@ DELEGATION_ONLY policy as BOGUS.
         keys at the top, followed by Top Level domain (TLD) keys one
         level underneath. While the root and TLD zones are asumed to
         be almost exclusively delegation-only zones, there is
-        currently no method to audit these zones to ensure they behave
+        currently no interoperable and automatable mechanism
+        for auditing these zones to ensure they behave
         as a delegation-only zone. This creates an attractive target
         for malicious use of these zones - either by their owners or
         through coercion. 
        </t>
        <t>
-        This document defines a mechanism for zone owners, at DNSKEY
-        creation time, to indicate they will only delegate the
-        remainder of the tree to lower-level zones, allowing easier
+        This document defines a mechanism for zone owners to create
+        DNSKEY that indicate they will only delegate the remainder of
+        the DNS tree to lower-level zones.  This allows for easier
         delegation policy verification, logging and auditing of DNS
-        responses they serve.
+        responses served by their infrastructure.
         </t>
         <t>
-       This document introduces a new DNSKEY flag allowing zone owners
-       to commit that the zone will never sign any DNS data aside from
-       records at the zone apex and child delegation records, and if
-       any such signed data is encountered by validating resolvers,
-       that this data should be interpreted as BOGUS.
+       Specifically, this document introduces a new DNSKEY flag
+       allowing zone owners to commit to only signing records relating
+       to delegation.  If a DNSSEC validator discovers any
+       non-delegation zone data signed by a flagged key, this data
+       can be interpreted as BOGUS.
         </t>
       </section>
   
@@ -94,35 +95,74 @@ DELEGATION_ONLY policy as BOGUS.
 
 
 <section title="The Deep Link State problem">
-  <t>
-The hierarchical model of DNS and DNSSEC (<xref target="RFC4033"/>, <xref target="RFC4034"/>
-and <xref target="RFC4035"/>) comes with the property that a zone at one
-point in the hierarchy can define, and therefor override, everything in
-the DNS tree from their point and below. For example, the DNSSEC root key could ignore
-the NS records for ".org" and "example.org" and could place a record
-"www.example.org" directly into its own zone, with a corresponding RRSIG
-signed by the root key itself. Even if resolvers would defend against this
-attack by not allowing RRSIG's to span across a potential zone cut, the zone
-operator (any level higher in the hierarchy than the target victim)
-could briefly remove the NS and DS records, and create a "legitimate" DNS
-entry for "www.example.org", hiding the normal zone cuts.
-The attacker can then publish DNS addresses records (e.g. A and AAAA
-records), as well as records used for authentication (e.g. TLSA, SMIME, OPENPGPKEY, SSHP or
-IPSECKEY records).
+  <t> The hierarchical model of DNS and DNSSEC (<xref
+  target="RFC4033"/>, <xref target="RFC4034"/> and <xref
+  target="RFC4035"/>) comes with the property that a zone at one point
+  in the hierarchy can define, and therefor override, everything below
+  in the DNS tree. And it is possible to do this on a per-client
+  basis.
+  </t>
+  <t> For example, the owner of the DNSSEC root key could generate a
+  specially crafted zone file that ignores the intended NS records for
+  ".org" and "example.org" and instead place an AAAA record
+  "www.example.org" directly into the specially crafted zone, with a
+  corresponding RRSIG signed by the root DNSKEY itself.  This
+  specially crafted zone could be served to specific customers in an
+  effort to subvert a portion of the DNS ecosystem.  Similarly, the
+  TLD "example" could circumvent company.example for certain
+  customers.  It is important to note that this can be done without
+  changing the upstream DS record or trust anchor -- the DNSKEY is
+  already in the trust path and is merely signing deeper DNS records
+  than the zone owner's clients may have expected it to sign.</t>
+
+<t>[Wes note: we should switch to .example as the TLD instead of
+including .org in the chain with a problem; leaving it as is for now]</t>
+
+<t> Old text that is hard to parse; leaving it for now maybe trying to
+wrap it in:
+Even if resolvers
+would defend against this attack by not allowing RRSIG's to span
+across a potential zone cut, the zone operator (any level higher in
+the hierarchy than the target victim) could briefly remove the NS and
+DS records, and create a "legitimate" DNS entry for "www.example.org",
+hiding the normal zone cuts.  The attacker can then publish DNS
+addresses records (e.g. A and AAAA records), as well as records used
+for authentication (e.g. TLSA, SMIME, OPENPGPKEY, SSHP or IPSECKEY
+records).
  </t>
- <t>
-Exposing such targeted attacks would require a transparency audit setup
-(<xref target="RFC6962" />) that would need to
-log all signed DNS data to prove that data signed by a parent zone's DNSKEY was out of
-expected policy. The very distributed nature of the DNS makes such transparency logs
-prohibitively expensive and nearly impossible to operate. Additionally, it would
-require zone owners to expose all their zone data to any public log
-operators, thereby introducing privacy implications and exposing all
-relevant DNS data to a public archive. Though this may be acceptable
-for some domains, such as the root, where data is already public,
-other delegation domains have legal implications that prohibit them
-from participating in such a system.
- </t>
+
+<t>
+Exposing such targeted attacks would require transparency audit
+infrastructure similar to what is deployed for PKIX (<xref
+target="RFC6962" />).  However, it would need to log significantly
+more data, as all signed DNS data used by a DNSKEY must be recorded in
+order to prove that data signed by a parent zone's DNSKEY was out of
+expected policy. The very distributed nature of the DNS, and the
+typically frequent zone resigning rate frequency, makes such
+transparency logs prohibitively expensive and nearly impossible to
+operate. Additionally, it would require zone owners to expose all
+their zone data to any public log operators, thereby introducing
+privacy implications and exposing all relevant DNS data to a public
+archive. Though this may be acceptable for some domains, such as the
+root, where DNS data is already considered public.  However, other
+delegation domains have legal implications that prohibit them from
+participating in such a system.
+</t>
+
+<t>Additionally, there is no signaling mechanism that lets validating
+resolvers know what must be logged.  Today there are over 1500 TLDs in
+the root zone, some of which may be considered delegation only while
+others may not be.  Meanwhile, the list of entries in the public
+suffix list contains over 8800 entries as well, 73 are wild-card
+entries (prefixed with a "*") indicating that all of their (unknown
+number of) children are public registration points.  In absence of a
+interoperable mechanism, that that provide by this draft, it is
+infeasible that a validating resolver or auditing log could know which
+of these zones are delegation-only without individual policy
+statements from each of them.
+[todo: xref psl] are expected to be delegation only
+</t>
+
 </section>
 
 <section title="The DELEGATION_ONLY DNSKEY flag">
