@@ -51,7 +51,7 @@ indicates that the particular zone will never sign zone data across a
 label. That is, every label (dot) underneath is considered a zone cut
 and must have its own (signed) delegation. Additionally, it indicates the
 zone is expecting its parent to never bypass or override the zone. DNSSEC
-Validating Resolvers can use this bit to mark any data that violates
+Validating Resolvers can use this flag to mark any data that violates
 the DELEGATION_ONLY policy as BOGUS.
       </t>
     </abstract>
@@ -186,7 +186,7 @@ potentially benefit or be affected by:</t>
 
 <t>Authoritative parent: If (and only if) an authoritative parent is
 a "delegation only" zone, it could generate a DNSKEY with the
-DELEGATION_ONLY bit set, indicating a verifiable promise to the world
+DELEGATION_ONLY flag set, indicating a verifiable promise to the world
 that will not sign any records other than delegation records.</t>
 
 <t>Authoritative Child / Delegated Zone: child zones existing
@@ -195,7 +195,7 @@ knowing their parent will not (and cannot) sign DNS records within the
 child's portion of the DNS tree using the marked DNSKEY.</t>
 
 <t>Validating Resolver: A validating that supports verifying the
-DELEGATION_ONLY bit is capable of rejecting or discarding any data
+DELEGATION_ONLY flag is capable of rejecting or discarding any data
 from an authoritative parent that incorrectly signs non-delegation
 records too low in the DNS tree.  If the validating resolver supports
 a (future-defined) DNSSEC transparency audit log as well, it may
@@ -208,7 +208,7 @@ it, for public verification, similar to <xref target="RFC6962" />.
 What it chooses to accept into its log might be only certain zone
 data, or any zone with a marked DNSKEY.</t>
 
-<t>Note that without a DNSSEC Log, the DELEGATION_ONLY bit is still
+<t>Note that without a DNSSEC Log, the DELEGATION_ONLY flag is still
 useful per the discussion in the Validating Resolvers role: the
 resolver will reject incorrectly signed, non-delegation data.
 However, malicious parent zones are still capable of creating two (or
@@ -230,7 +230,7 @@ anchor update in all validating resolvers.</t>
 <section title="The DELEGATION_ONLY DNSKEY flag">
 <t>
 This document introduces a new DNSKEY flag called DELEGATION_ONLY. When
-this flag is set on a DNSKEY with its Secure Entry Point (SEP) bit set,
+this flag is set on a DNSKEY with its Secure Entry Point (SEP) flag set,
 the zone owner commits to not sign any data that crosses a label down
 in the hierarchy. This commits a parent in the DNS hierarchy to only
 publish signed DS records and unsigned glue records (NS and A/AAAA) for
@@ -323,15 +323,15 @@ bypassing its DELEGATION_ONLY flag.
      Once the Root DNSKEY is marked with a DELEGATION_ONLY flag and
      deployed resolvers are configured with the new DNSKEY, all TLDs
      will be ensured that the Root DNSKEY can no longer be abused to
-     override child zone data.  Until the Root KSK DNSKEY sets this bit,
-     software SHOULD imply this bit is always set, as this is the current
+     override child zone data.  Until the Root KSK DNSKEY sets this flag,
+     software SHOULD imply this flag is always set, as this is the current
      expectation of the Root Zone.
      </t>
      </section>
 
      <section title="Migrating to and from DELEGATION_ONLY">
      <t>
-     There might be multiple DNSKEYs with the SEP bit set in a
+     There might be multiple DNSKEYs with the SEP flag set in a
      zone. For the purpose of declaring a zone as DELEGATION_ONLY,
      only those DNSKEY's that have a corresponding DS record at the
      parent MUST be considered. If multiple DS records appear at the
@@ -363,7 +363,7 @@ zone itself.
 If a zone is publishing glue records for a number of zones, and the
 zone that contains the authoritative records for this glue is deleted,
 a resigning of the zone will make this orphaned glue authoritative within
-the zone. However, with the DELEGATION_ONLY bit set, this (signed) DNSSEC
+the zone. However, with the DELEGATION_ONLY flag set, this (signed) DNSSEC
 data will be considered BOGUS as it violations the commitment to only
 delegate. This may impact domains that depended on this unsigned glue. Note
 that glue handling differs per zone. Some TLDs already remove the glue records
@@ -380,18 +380,18 @@ to resolve.
 <t>
 If a domain uses Empty Non Terminals (ENT), that is uses multiple labels
 where the label is not covered by its own delegation, then the
-DELEGATION_ONLY bit cannot be set. For example, some domains allow
+DELEGATION_ONLY flag cannot be set. For example, some domains allow
 registrations straight into their zone (eg "child.example") while
 others use an ENT to categorize these (eg "child.co.example" and
 "child.ac.example"). Some TLDs contain a few ENTs marking some
 administrative or geographic region. Such TLDs must first migrate
 their ENT to fully delegated child zones before enabling the
-DELEGATION_ONLY bit.
+DELEGATION_ONLY flag.
 </t>
 <t>
 Some TLDs publish their nameserver (NS) records straight within their
 TLD (eg "ns1.example") which makes these names indistinguishable from
-real relegations with respect to the DELEGATION_ONLY bit. These NS
+real relegations with respect to the DELEGATION_ONLY flag. These NS
 entries would have to be moved to their own delegation zone (eg "ns1.nic.example")
 </t>
 <t>
@@ -399,7 +399,7 @@ Some TLDs have a requirement for certain Fully Qualified Domain Names (FQDN)
 within their TLD, such as "whois.example" or "nic.example". These usually
 appear as signed data of the TLD and not as a delegated child zone. These
 names would have to be converted to delegated zones before enabling the
-DELEGATION_ONLY bit.
+DELEGATION_ONLY flag.
 </t>
 <t>
 The bind DNS software has an option called "delegation_only zones"
