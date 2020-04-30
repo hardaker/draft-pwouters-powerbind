@@ -63,8 +63,8 @@ the DELEGATION_ONLY policy as BOGUS.
        The DNS Security Extensions [DNSSEC] use public key cryptography to
         create an hierarchical trust base with the DNSSEC root public
         keys at the top, followed by Top Level domain (TLD) keys one
-        level underneath. While the root and TLD zones are asumed to
-        be almost exclusively delegation-only zones, there is
+        level underneath. While the root and most TLD zones are asumed to
+        be exclusively delegation-only zones, there is
         currently no interoperable and automatable mechanism
         for auditing these zones to ensure they behave
         as a delegation-only zone. This creates a target
@@ -72,10 +72,10 @@ the DELEGATION_ONLY policy as BOGUS.
         through coercion. 
        </t>
        <t>
-        This document defines a mechanism for zone owners to create
-        DNSKEY that indicate they will only delegate the remainder of
+        This document defines a mechanism for delegation-only zone owners to create
+        a DNSKEY that indicate they will only delegate the remainder of
         the DNS tree to lower-level zones.  This allows for easier
-        delegation policy verification, logging and auditing of DNS
+        delegation policy verification and logging and auditing of DNS
         responses served by their infrastructure.
         </t>
         <t>
@@ -98,7 +98,7 @@ the DELEGATION_ONLY policy as BOGUS.
       </section>
 
 
-<section title="The Deep Sign problem">
+<section title="The Deep Signing problem">
   <t> The hierarchical model of DNS and DNSSEC (<xref
   target="RFC1034" />, <xref target="RFC1035" />, <xref
   target="RFC4033" />, <xref target="RFC4034" /> and <xref
@@ -115,11 +115,11 @@ the DELEGATION_ONLY policy as BOGUS.
   resolvers would find this record perfectly acceptable, as it was
   signed by a key within the proper chain of trust (in this case, a
   root DNSKEY).  This specially crafted zone could then even be served
-  to specific customers in an effort to subvert a portion of the DNS
-  ecosystem.</t>
+  to specific clients in an effort to subvert a portion of the DNS
+  ecosystem for a portion of the Internet.</t>
 
   <t>Similarly, the TLD "example" could circumvent
-  company.example for certain customers.  It is important to note that
+  company.example for certain clients.  It is important to note that
   this can be done without changing the upstream DS record or trust
   anchor -- the DNSKEY is (again) already in the trust path and is merely
   signing deeper DNS records than the zone owner's clients may have
@@ -127,7 +127,7 @@ the DELEGATION_ONLY policy as BOGUS.
 
   <t>It is important to note that this "feature" has always been
   present.  Since the creation of the DNS, it has always been possible
-  to serve "split zones".  Specifically, it is not a fault of DNSSEC
+  to serve "split zones".  Specifically, it is not a problem created by DNSSEC
   -- DNSSEC was not designed to protect against this use case.</t>
 
 <!--
@@ -166,7 +166,8 @@ participating in such a system.
 </t>
 
 <t>Furthermore, there is no signaling mechanism that lets validating
-resolvers know what must be logged.  Today there are over 1500 TLDs in
+resolvers know which zones are supposedly delegation-only, and what
+zones can be logged.  Today there are over 1500 TLDs in
 the root zone, some of which may be considered delegation-only while
 others may not be.  At the time of this writing, the list of entries
 in the public suffix list contains over 8800 entries as well, with 73
@@ -181,7 +182,7 @@ statements from each of them.  [todo: xref psl]
 <section title="Affected parties and their roles">
 
 <t>Upon deployment of this specification, the following parties would be
-potentially affected:</t>
+potentially benefit or be affected by:</t>
 
 <t>Authoritative parent: If (and only if) an authoritative parent is
 a "delegation only" zone, it could generate a DNSKEY with the
@@ -201,11 +202,11 @@ a (future-defined) DNSSEC transparency audit log as well, it may
 submit the appropriate data to a DNSSEC transparency log that
 appropriately tracks DNSSEC signatures.</t>
 
-<t>DNSSEC Transparency Log (optional): a DNSSEC transparency log would create a
-non-modifiable trace of log entries submitted to it, for public
-verification, similar to <xref target="RFC6962" />.  What it chooses
-to accept into its log might be only certain zone data, or any zone
-with a marked DNSKEY.</t>
+<t>DNSSEC Transparency Log (optional future): a DNSSEC transparency
+log would create a non-modifiable trace of log entries submitted to
+it, for public verification, similar to <xref target="RFC6962" />.
+What it chooses to accept into its log might be only certain zone
+data, or any zone with a marked DNSKEY.</t>
 
 <t>Note that without a DNSSEC Log, the DELEGATION_ONLY bit is still
 useful per the discussion in the Validating Resolvers role: the
@@ -213,14 +214,14 @@ resolver will reject incorrectly signed, non-delegation data.
 However, malicious parent zones are still capable of creating two (or
 more) DNSKEYs, one with the DELEGATION_ONLY flag and one without.
 However, they would also have to publish those DS records as well,
-which is detectable by DNSSEC monitoring platforms,
-regardless of the existence of a DNSSEC Transparency Log.  Any zone
-with multiple DS records that link to both a DELEGATION_ONLY marked
-and an unmarked DNSKEY would be considered suspicious.  Circumventing
-this through obfuscation would require the collusion of their parent
-as well.  Finally, a DELEGATION_ONLY flag DNSKEY for the root zone
-cannot be overridden easily, as it would require a trust anchor update
-in all validating resolvers.</t>
+which is detectable by DNSSEC monitoring platforms, regardless of the
+existence of a DNSSEC Transparency Log.  Any zone with multiple DS
+records that link to both a DELEGATION_ONLY marked and an unmarked
+DNSKEY would be considered suspicious (or at least in transition).
+Circumventing this through obfuscation would require the collusion of
+their parent as well.  Finally, a DELEGATION_ONLY flagged DNSKEY for
+the root zone cannot be overridden easily, as it would require a trust
+anchor update in all validating resolvers.</t>
 
 </section>
 
