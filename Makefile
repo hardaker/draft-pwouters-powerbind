@@ -149,3 +149,6 @@ endif
 	-git checkout -qf "$(GIT_ORIG)"
 	-rm -rf $(GHPAGES_TMP)
 endif
+
+README.md: draft-pwouters-powerbind.txt
+	(echo '```' ; cat $< ; echo '```') > README.md
