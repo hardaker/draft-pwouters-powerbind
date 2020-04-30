@@ -1,4 +1,4 @@
-```
+
 
 
 
@@ -6,21 +6,21 @@ DNSOP                                                         P. Wouters
 Internet-Draft                                                   Red Hat
 Updates: 4035 (if approved)                                  W. Hardaker
 Intended status: Informational                                   USC/ISI
-Expires: October 30, 2020                                 April 28, 2020
+Expires: October 31, 2020                                 April 29, 2020
 
 
                     The DELEGATION_ONLY DNSKEY flag
-                      draft-pwouters-powerbind-02
+                      draft-pwouters-powerbind-04
 
 Abstract
 
    This document introduces a new DNSKEY flag called DELEGATION_ONLY
    that indicates that the particular zone will never sign zone data
-   aside from records at the apex of the zone or delegation records for
-   its children.  That is, every label (dot) underneath is considered a
-   zone cut and must have its own (signed) delegation.  DNSSEC
-   Validating Resolvers can use this bit to mark any data that violates
-   the DELEGATION_ONLY policy as BOGUS.
+   across a label.  That is, every label (dot) underneath is considered
+   a zone cut and must have its own (signed) delegation.  Additionally,
+   it indicates the zone is expecting its parent to never bypass or
+   override the zone.  DNSSEC Validating Resolvers can use this bit to
+   mark any data that violates the DELEGATION_ONLY policy as BOGUS.
 
 Status of This Memo
 
@@ -37,7 +37,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 30, 2020.
+   This Internet-Draft will expire on October 31, 2020.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 1]
+Wouters & Hardaker      Expires October 31, 2020                [Page 1]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
@@ -69,34 +69,33 @@ Table of Contents
    3.  The Deep Link State problem . . . . . . . . . . . . . . . . .   3
      3.1.  Affected parties and their roles  . . . . . . . . . . . .   4
    4.  The DELEGATION_ONLY DNSKEY flag . . . . . . . . . . . . . . .   5
-     4.1.  _underscore label exception . . . . . . . . . . . . . . .   5
-     4.2.  Parent Zone Transparency  . . . . . . . . . . . . . . . .   6
-     4.3.  Marking the Root DNSKEY DELEGATION_ONLY . . . . . . . . .   6
-     4.4.  Migrating to and from DELEGATION_ONLY . . . . . . . . . .   7
-     4.5.  Allowed record types for labels inside
-           DELEGATION_ONLY zones . . . . . . . . . . . . . . . . . .   7
-   5.  Operational Considerations  . . . . . . . . . . . . . . . . .   7
-   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
-   7.  Privacy Considerations  . . . . . . . . . . . . . . . . . . .   8
-   8.  Human Rights Considerations . . . . . . . . . . . . . . . . .   9
-   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
-   10. Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   9
-   11. References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
-     11.1.  Normative References . . . . . . . . . . . . . . . . . .   9
-     11.2.  Informative References . . . . . . . . . . . . . . . . .  10
+   5.  _underscore label exception . . . . . . . . . . . . . . . . .   6
+   6.  Parental Transparency . . . . . . . . . . . . . . . . . . . .   6
+   7.  Marking zone keys DELEGATION_ONLY . . . . . . . . . . . . . .   6
+     7.1.  Marking the Root DNSKEY DELEGATION_ONLY . . . . . . . . .   7
+     7.2.  Migrating to and from DELEGATION_ONLY . . . . . . . . . .   7
+   8.  Operational Considerations  . . . . . . . . . . . . . . . . .   7
+   9.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
+   10. Privacy Considerations  . . . . . . . . . . . . . . . . . . .   8
+   11. Human Rights Considerations . . . . . . . . . . . . . . . . .   8
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
+   13. Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   9
+   14. References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
+     14.1.  Normative References . . . . . . . . . . . . . . . . . .   9
+     14.2.  Informative References . . . . . . . . . . . . . . . . .  10
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  10
 
 1.  Introduction
 
    The DNS Security Extensions [DNSSEC] use public key cryptography to
-   create a hierarchical trust base with the DNSSEC root public keys at
+   create an hierarchical trust base with the DNSSEC root public keys at
    the top, followed by Top Level domain (TLD) keys one level
    underneath.  While the root and TLD zones are asumed to be almost
    exclusively delegation-only zones, there is currently no
    interoperable and automatable mechanism for auditing these zones to
-   ensure they behave as a delegation-only zone.  This creates an
-   attractive target for malicious use of these zones - either by their
-   owners or through coercion.
+   ensure they behave as a delegation-only zone.  This creates a target
+   for malicious use of these zones - either by their owners or through
+   coercion.
 
    This document defines a mechanism for zone owners to create DNSKEY
    that indicate they will only delegate the remainder of the DNS tree
@@ -109,7 +108,8 @@ Table of Contents
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 2]
+
+Wouters & Hardaker      Expires October 31, 2020                [Page 2]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
@@ -120,8 +120,10 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
 2.  Terminology
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in RFC 2119 [RFC2119].
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
 
 3.  The Deep Link State problem
 
@@ -153,10 +155,7 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
    "split zones".  Specifically, it's not a fault of DNSSEC -- DNSSEC
    was not designed to protect against this use case.
 
-   [Wes note: we should switch to .example as the TLD instead of
-   including .org in the chain with a problem; leaving it as is for now]
-
-   Exposing such targeted attacks would require transparency audit
+   Exposing such targeted attacks requires a transparency audit
    infrastructure similar to what is deployed for PKIX ([RFC6962]).
    However, a DNSSEC version would need to log significantly more data,
    as all signed DNS data used by a DNSKEY must be recorded in order to
@@ -165,7 +164,8 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 3]
+
+Wouters & Hardaker      Expires October 31, 2020                [Page 3]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
@@ -221,7 +221,7 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 4]
+Wouters & Hardaker      Expires October 31, 2020                [Page 4]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
@@ -251,46 +251,51 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
 
    This document introduces a new DNSKEY flag called DELEGATION_ONLY.
    When this flag is set on a DNSKEY with its Secure Entry Point (SEP)
-   bit set - that is the DNSKEY is a Key Signing Key (KSK) - the zone
-   owner commits to not sign any data aside from its records at the apex
-   of the zone and delegation records for its children.  This commits a
-   parent in the DNS hierarchy to only publish signed DS records and
-   unsigned glue records (NS and A/AAAA) for its child zones.  It will
-   no longer be able to ignore (or briefly delete, see below) a child
-   delegation and publish data beyond its own label by pretending the
-   next label is not a zone cut.
+   bit set, the zone owner commits to not sign any data that crosses a
+   label down in the hierarchy.  This commits a parent in the DNS
+   hierarchy to only publish signed DS records and unsigned glue records
+   (NS and A/AAAA) for its child zones.  It will no longer be able to
+   ignore (or briefly delete, see below) a child delegation and publish
+   data crossing zone labels by pretending the next label is not a zone
+   cut.
 
    For such a parent to take over data that belongs to its child zone,
-   it has two choices.  It can (temporarily) remove its own DNSKEY
+   it has two choices.  It can (temporarilly) remove its own DNSKEY
    DELEGATION_ONLY flag or it can replace the NS and DS records of its
    child zone with its own data (destinations and key references) so it
    can sign DNS data that belongs to its own child zone.  However, both
    of these actions cannot be hidden, thus exposing such malicious
    behavior when combined with DNSSEC Transparency logs.
 
-4.1.  _underscore label exception
-
-   Some protocols, such as the DANE protocol [RFC6698] use a number of
-   labels that start with an underscore (_) prefix to publish
-   information about the zone itself.  For example, the TLSA record for
-   example.com is published at the location _443._tcp.example.com.
+   A zone that publishes a DNSKEY with the DELEGATION_ONLY flag also
+   signifies that it is not expecting its own parent to skip it, thereby
+   bypassing its DELEGATION_ONLY flag.
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 5]
+
+
+
+
+Wouters & Hardaker      Expires October 31, 2020                [Page 5]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
-   These records are semantically part of the zone itself and are not
-   delegated child zones.  Any chain of labels consisting of only labels
-   each starting with an underscore (_) under the apex of the zone is
-   not considered to violate the DELEGATION_ONLY flag limitation of
-   being DELEGATION_ONLY, as this data is logically part of the zone
-   itself and is never meant to be interpreted as an independent
-   delegated child zone.
+5.  _underscore label exception
 
-4.2.  Parent Zone Transparency
+   Some protocols, such as the DANE protocol [RFC6698] use a number of
+   labels that start with an underscore (_) prefix to publish
+   information about the zone itself.  For example, the TLSA record for
+   www.example.com is published at the location
+   _443._tcp.www.example.com.  These records are semantically part of
+   the zone itself and are not delegated child zones.  Any chain of
+   labels that each start with an underscore (_) is not considered to
+   violate the DELEGATION_ONLY flag limitation of being DELEGATION_ONLY,
+   as this data is logically part of the zone itself and is never meant
+   to be interpreted as an independent delegated child zone.
+
+6.  Parental Transparency
 
    A parent zone, such as the root zone, a TLD or any public suffix list
    delegation point, that has published a key with the DELEGATION_ONLY
@@ -304,62 +309,62 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
    zone first publishes an additional updated DS record to its parent.
 
    In the case of the root key, it would require updating out-of-band
-   root key meta information and/or performing an [RFC5011] style
-   rollover for the same key with updated DNSKEY flags.  Due to the
-   timings of such a rollover, it would take at least 30 days for the
-   first validating resolvers to process this policy change.  It would
-   also be a highly visible event.
+   root key meta information and/or perform an [RFC5011] style rollover
+   for the same key with updated DNSKEY flags.  Due to the timings of
+   such a rollover, it would take at least 30 days for the first
+   validating resolvers to pick up this policy change.  It would also be
+   a highly visible event.
 
    Replacing the NS and DS records of a child zone can still be done in
-   a targeted attack by a parent, but these events are something that
-   can be easily tracked by a transparency infrastructure similar to
-   what is now in use for the WebPKI using [RFC6962](bis).  With client
+   a targeted attack mode, but these events are something that can be
+   easilly tracked by a transparency infrastructure similar to what is
+   now in use for the WebPKI using [RFC6962](bis).  With client
    implementations of transparency, all DELEGATION_ONLY flag changes
    would be logged and become visible to the owner of attacked child
    zones, exposing a parent's malicious actions.
 
-4.3.  Marking the Root DNSKEY DELEGATION_ONLY
+7.  Marking zone keys DELEGATION_ONLY
 
-   Once the Root DNSKEY is marked with a DELEGATION_ONLY flag and
-   deployed resolvers are configured with the new DNSKEY, all TLDs will
-   be assured that the Root DNSKEY can no longer be abused to override
-   child zone data.  Until the Root KSK DNSKEY sets this bit, software
-   SHOULD imply this bit is always set, as this is the current
-   expectation of the Root Zone.
-
+   Even before a parent DNSKEY (or the root key) has set the
+   DELEGATION_ONLY flag, zones can already signal their own willingness
+   to commit to being DELEGATION_ONLY zones.  Any changes of that state
+   in a zone DNSKEY will require those zones to submit a new DS record
+   to their parent.  Setting the DELEGATION_ONLY flag would trigger
 
 
 
-
-
-
-Wouters & Hardaker      Expires October 30, 2020                [Page 6]
+Wouters & Hardaker      Expires October 31, 2020                [Page 6]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
-4.4.  Migrating to and from DELEGATION_ONLY
+   DNSSEC Transparency clients to start monitoring for actions by the
+   zone or its parents that would be bypassing the DELEGATION_ONLY
+   policy of the zone.  Validating resolvers would mark any data in
+   violation of the DELEGATION_ONLY policy as BOGUS.
+
+7.1.  Marking the Root DNSKEY DELEGATION_ONLY
+
+   Once the Root DNSKEY is marked with a DELEGATION_ONLY flag and
+   deployed resolvers are configured with the new DNSKEY, all TLDs will
+   be ensured that the Root DNSKEY can no longer be abused to override
+   child zone data.  Until the Root KSK DNSKEY sets this bit, software
+   SHOULD imply this bit is always set, as this is the current
+   expectation of the Root Zone.
+
+7.2.  Migrating to and from DELEGATION_ONLY
 
    There might be multiple DNSKEYs with the SEP bit set in a zone.  For
    the purpose of declaring a zone as DELEGATION_ONLY, only those
    DNSKEY's that have a corresponding DS record at the parent MUST be
    considered.  If multiple DS records appear at the parent, some of
-   which point to DNSKEY's with the DELEGATION_ONLY flag set and some of
-   which point to DNSKEY's without the DELEGATION_ONLY flag set, the
-   zone MUST be considered DELEGATION_ONLY.  This situation will occur
-   when a zone is rolling its DNSKEY key at the same time as it is
-   committing to a DELEGATION_ONLY zone (or the reverse).  During the
-   overlap, the zone is considered to be a delegation-only zone.
+   which point to DNSKEYs with and some of which point to DNSKEYs
+   without the DELEGATION_ONLY flag set, the zone MUST be considered
+   DELEGATION_ONLY.  This situation will occur when a zone is rolling
+   its DNSKEY key at the same time as it is committing to a
+   DELEGATION_ONLY zone (or the reverse).
 
-4.5.  Allowed record types for labels inside DELEGATION_ONLY zones
-
-   Some labels within a DELEGATION_ONLY marked zone must be published by
-   a parent in order to properly sign its zone and its child's referral
-   data.  Thus, any published and signed zone data deeper than the zone
-   apex MUST only include DNS TYPEs of glue (NS, A and AAAA), DS, NSEC
-   and NSEC3 records.
-
-5.  Operational Considerations
+8.  Operational Considerations
 
    Setting or unsetting the DELEGATION_ONLY flag must be handled like
    any other Key Signing Key rollover procedure, with the appropriate
@@ -371,39 +376,24 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
    delegations for these child zones with the same or different DNSKEY
    as used in the parent zone itself.
 
-   Zones setting the DELEGATION_ONLY flag can no longer publish non-
-   delegation records in their zone.  That means that for those RRTYPEs
-   that take DNS targets as parameters (NS, MX, SRV, ...), the targets
-   cannot have their own host names on the zone.  Instead, a sub-zone
-   needs to be created to place those targets in.  If "example.com" has
-   an NS record pointing to "ns0.example.com", this entry needs to be
-   moved to a sub-zone such as ns0.nic.example.com before the zone can
-   be switched to DELEGATION_ONLY.  Otherwise, the signed record
-   "ns0.example.com" would be interpreted as the parent's hostile
-   takeover of the child zone "ns0.example.com".  Similarly, an MX
-   target pointing to "mail.example.com" would have to be moved to a
-   sub-zone, such as "mail.nic.example.com".  The zone "nic.example.com"
-   MUST NOT be made DELEGATION_ONLY in that case, otherwise it would
-   have the exact same problem.
-
-
-
-
-Wouters & Hardaker      Expires October 30, 2020                [Page 7]
-
-Internet-Draft           Delegation Only DNSKEYs              April 2020
-
-
    If a zone is publishing glue records for a number of zones, and the
    zone that contains the authoritative records for this glue is
    deleted, a resigning of the zone will make this orphaned glue
    authoritative within the zone.  However, with the DELEGATION_ONLY bit
    set, this (signed) DNSSEC data will be considered BOGUS as it
    violations the commitment to only delegate.  This may impact domains
-   that depend on these incorrect glue records.
+   that depended on this unsigned glue.
 
    For example, if "example.com" and "example.net" use NS records
    pointing to "ns.example.net", then if "example.net" is deleted from
+
+
+
+Wouters & Hardaker      Expires October 31, 2020                [Page 7]
+
+Internet-Draft           Delegation Only DNSKEYs              April 2020
+
+
    the ".net" zone, and the previously unsigned glue of "ns.example.net"
    is now signed by the ".net" zone, the "example.com" zone will lose
    its NS records and fail to resolve.
@@ -413,23 +403,19 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
    refers to ignoring wildcard records in specified zones that are
    deemed delegation-only zones.
 
-6.  Security Considerations
+9.  Security Considerations
 
-   Some parent zone attacks cannot be detected when the validating
+   Some parental attacks cannot be detected when the validating
    resolver's cache is empty.  Care should be taken by resolvers to not
-   unnecessarily empty their cache.  This is specifically important for
+   unneccessarily empty their cache.  This is specifically important for
    roaming clients that re-connect frequently to different wireless or
    mobile data networks.
-
-   The DELEGATION_ONLY DNSKEY flag is only valid for DNSKEY's that have
-   the SEP bit set.  It MUST be ignored on DNSKEY's without the SEP bit
-   set.
 
    This DELEGATION_ONLY mechanism is not designed to completely foil
    attacks (since parent's can simply change a child's referral data),
    but rather to empower transparency logging mechanisms.
 
-7.  Privacy Considerations
+10.  Privacy Considerations
 
    Some of the protection offered by the DELEGATION_ONLY flag is only
    available when DNS resolvers report changes in the signing depth of
@@ -440,71 +426,58 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
    expected that DNSSEC Transparency behaviour will be written up in a
    separate document.
 
+11.  Human Rights Considerations
+
+   The DNS protocol's hierarchy limits zones authority to themselves and
+   their child zones only.  While this provides a finer grained trust
+   model compared to a simple list of trusted entities, such as used in
+   the WebPKI, it consolidates a lot of power in the top of the DNS
+   hierarchy.  With the increased reliance on DNSSEC for securely
+   identifying resources, such as DANE records, it becomes very
+   important to audit those entities high up in the hierarchy to not
+   abuse or be co-erced into abusing control of the independent child
+   zones.  The protocol extension specifically aims at increasing
+   parental transparency and blocks some parental attacks from those
+   parents who have publicly claimed to never override their child zone
+   data.
 
 
 
 
 
-Wouters & Hardaker      Expires October 30, 2020                [Page 8]
+Wouters & Hardaker      Expires October 31, 2020                [Page 8]
 
 Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
-8.  Human Rights Considerations
+   Parents using the DELEGATION_ONLY flag publication to increase their
+   public trust are still able to remove child zones from their zone,
+   for example in cases of legal compliance or to prevent malicious
+   activity happening in its child zone.  But these parents can only do
+   so publicly and can no longer surreptitiously take control of their
+   own child zones.
 
-   The DNS protocol's hierarchy limits zones authority to themselves and
-   their child zones only.  While this provides a finer grained trust
-   model compared to a simple list of all-powerful trusted entities,
-   such as those used in the WebPKI, it consolidates a lot of power in
-   the few keys at the top of the DNS hierarchy.  With the increased
-   reliance on DNSSEC for securely identifying resources, such as DANE
-   records, it is important to monitor and audit the keys at the top of
-   the DNS hierarchy to prevent their abuse and coercion of child zones.
-   This DNS protocol extension specifically aims at increasing parent
-   zone transparency and blocks some parent zone attacks from those
-   parents who have publicly claimed to never override their child zone
-   data and thus increases the security and stability of DNS and DNSSEC.
-
-   Zones publishing the DELEGATION_ONLY flag to increase their public
-   trust are still able to remove child zones from their zone, for
-   example in cases of legal compliance or to prevent malicious activity
-   happening in its child zones.  But these parents can only do so
-   publicly and can no longer surreptitiously take control of their own
-   child zones.  This protocol extension does not limit legal
-   enforcement of child zones by their parent zones other than making it
-   visible for everyone when a childzone is legally taken over for
-   compliance or legal reasons.
-
-9.  IANA Considerations
+12.  IANA Considerations
 
    This document defines a new DNSKEY flag, the DELEGATION_ONLY flag,
    whose value [TBD] has been allocated by IANA from the DNSKEY FLAGS
    Registry.
 
-10.  Acknowledgements
+13.  Acknowledgements
 
-   The authors thank Thomas H.  Ptacek for his insistence on pointing
-   out the trust issues at the top of the DNSSEC hierarchy.
+   The authors wishes to thank Thomas H.  Ptacek for his insistence on
+   this matter.
 
    Thanks to the following IETF participants: Viktor Dukhovni, Shumon
-   Huque, Geoff Huston, Rick Lamb, Andrew McConachie and Sam Weiler.
+   Huque, Geoff Huston, Rick Lamb and Sam Weiler.
 
-11.  References
+14.  References
 
-11.1.  Normative References
+14.1.  Normative References
 
    [RFC1034]  Mockapetris, P., "Domain names - concepts and facilities",
               STD 13, RFC 1034, DOI 10.17487/RFC1034, November 1987,
               <https://www.rfc-editor.org/info/rfc1034>.
-
-
-
-
-
-Wouters & Hardaker      Expires October 30, 2020                [Page 9]
-
-Internet-Draft           Delegation Only DNSKEYs              April 2020
-
 
    [RFC1035]  Mockapetris, P., "Domain names - implementation and
               specification", STD 13, RFC 1035, DOI 10.17487/RFC1035,
@@ -524,7 +497,20 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
               Trust Anchors", STD 74, RFC 5011, DOI 10.17487/RFC5011,
               September 2007, <https://www.rfc-editor.org/info/rfc5011>.
 
-11.2.  Informative References
+
+
+
+
+Wouters & Hardaker      Expires October 31, 2020                [Page 9]
+
+Internet-Draft           Delegation Only DNSKEYs              April 2020
+
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+14.2.  Informative References
 
    [RFC4033]  Arends, R., Austein, R., Larson, M., Massey, D., and S.
               Rose, "DNS Security Introduction and Requirements",
@@ -553,15 +539,6 @@ Authors' Addresses
    Email: pwouters@redhat.com
 
 
-
-
-
-
-Wouters & Hardaker      Expires October 30, 2020               [Page 10]
-
-Internet-Draft           Delegation Only DNSKEYs              April 2020
-
-
    Wes Hardaker
    USC/ISI
    P.O. Box 382
@@ -580,38 +557,4 @@ Internet-Draft           Delegation Only DNSKEYs              April 2020
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Wouters & Hardaker      Expires October 30, 2020               [Page 11]
-```
+Wouters & Hardaker      Expires October 31, 2020               [Page 10]
