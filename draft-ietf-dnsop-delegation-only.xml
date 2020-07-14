@@ -10,7 +10,7 @@
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
 
-<rfc category="info" updates="4035" docName="draft-pwouters-powerbind-04" ipr="trust200902">
+<rfc category="info" updates="4035" docName="draft-ietf-dnsop-delegation-only-00" ipr="trust200902">
 
   <front>
 
@@ -63,7 +63,7 @@ the DELEGATION_ONLY policy as BOGUS.
        The DNS Security Extensions [DNSSEC] use public key cryptography to
         create an hierarchical trust base with the DNSSEC root public
         keys at the top, followed by Top Level domain (TLD) keys one
-        level underneath. While the root and most TLD zones are asumed to
+        level underneath. While the root and most TLD zones are assumed to
         be exclusively delegation-only zones, there is
         currently no interoperable and automatable mechanism
         for auditing these zones to ensure they behave
@@ -165,7 +165,7 @@ delegation domains have legal implications that prohibit them from
 participating in such a system.
 </t>
 
-<t>Furthermore, there is no signaling mechanism that lets validating
+<t>Furthermore, there is no signalling mechanism that lets validating
 resolvers know which zones are supposedly delegation-only, and what
 zones can be logged.  Today there are over 1500 TLDs in
 the root zone, some of which may be considered delegation-only while
@@ -242,11 +242,11 @@ pretending the next label is not a zone cut.
      record referrals into sub-zones (or other zones) -->
 <t>
 For such a parent to take over data that belongs to its child zone, it has
-two choices. It can (temporarilly) remove its own DNSKEY DELEGATION_ONLY
+two choices. It can (temporarily) remove its own DNSKEY DELEGATION_ONLY
 flag or it can replace the NS and DS records of its child zone with its
 own data (destinations and key references) so it can sign DNS data that
 belongs to its own child zone. However, both of these actions cannot be
-hidden, thus exposing such malicious behavior when combined with DNSSEC
+hidden, thus exposing such malicious behaviour when combined with DNSSEC
 Transparency logs.
 </t>
 
@@ -296,7 +296,7 @@ bypassing its DELEGATION_ONLY flag.
      <t>
      Replacing the NS and DS records of a child zone can still
      be done in a targeted attack mode, but these events
-     are something that can be easilly tracked by a transparency
+     are something that can be easily tracked by a transparency
      infrastructure similar to what is now in use for the WebPKI using
      <xref target="RFC6962"/>(bis). With client implementations of
      transparency, all DELEGATION_ONLY flag changes would be logged and
@@ -391,7 +391,7 @@ DELEGATION_ONLY flag.
 <t>
 Some TLDs publish their nameserver (NS) records straight within their
 TLD (eg "ns1.example") which makes these names indistinguishable from
-real relegations with respect to the DELEGATION_ONLY flag. These NS
+real delegations with respect to the DELEGATION_ONLY flag. These NS
 entries would have to be moved to their own delegation zone (eg "ns1.nic.example")
 </t>
 <t>
@@ -412,7 +412,7 @@ delegation-only zones.
 <section title="Security Considerations" anchor="security">
 <t>
 Some parental attacks cannot be detected when the validating resolver's
-cache is empty. Care should be taken by resolvers to not unneccessarily
+cache is empty. Care should be taken by resolvers to not unnecessarily
 empty their cache. This is specifically important for roaming clients
 that re-connect frequently to different wireless or mobile data networks.
 </t>
