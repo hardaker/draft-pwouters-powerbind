@@ -10,7 +10,7 @@
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
 
-<rfc category="info" updates="4035" docName="draft-ietf-dnsop-delegation-only-00" ipr="trust200902">
+<rfc category="info" updates="4035" docName="draft-ietf-dnsop-delegation-only-01" ipr="trust200902">
 
   <front>
 
@@ -47,12 +47,15 @@
     <abstract>
       <t>
 This document introduces a new DNSKEY flag called DELEGATION_ONLY that
-indicates that the particular zone will never sign zone data across a
-label. That is, every label (dot) underneath is considered a zone cut
-and must have its own (signed) delegation. Additionally, it indicates the
-zone is expecting its parent to never bypass or override the zone. DNSSEC
-Validating Resolvers can use this flag to mark any data that violates
-the DELEGATION_ONLY policy as BOGUS.
+indicates that this zone will only produce delegation responses
+for data outside of its own apex (or _underscore labels). That is, the
+Answer Section for queries that do not involve the apex (or _underscore
+labels) of the zone is empty, and only glue records in the Authority
+Section and Additional Section will be acceptable data in the response
+message. Additionally, it indicates that it is not expected that the
+parent of this delegation-only zone bypasses or removes the delegation
+to this zone. DNSSEC Validating Resolvers can use this flag to mark
+any data that violates the DELEGATION_ONLY policy as Bogus.
       </t>
     </abstract>
   </front>
@@ -73,7 +76,7 @@ the DELEGATION_ONLY policy as BOGUS.
        </t>
        <t>
         This document defines a mechanism for delegation-only zone owners to create
-        a DNSKEY that indicate they will only delegate the remainder of
+        a DNSKEY that indicates it will only delegate the remainder of
         the DNS tree to lower-level zones.  This allows for easier
         delegation policy verification and logging and auditing of DNS
         responses served by their infrastructure.
@@ -83,7 +86,7 @@ the DELEGATION_ONLY policy as BOGUS.
        allowing zone owners to commit to only signing records relating
        to delegation.  If a DNSSEC validator discovers any
        non-delegation zone data signed by a flagged key, this data
-       can be interpreted as BOGUS.
+       can be interpreted as Bogus.
         </t>
       </section>
   
@@ -109,8 +112,8 @@ the DELEGATION_ONLY policy as BOGUS.
   </t>
   <t> For example, the owner of the DNSSEC root key could generate a
   specially crafted zone file that ignores the intended NS records for
-  ".org" and "example.org".  It could place a AAAA record for
-  "www.example.org" directly into the specially crafted zone, with a
+  ".org" and "example.org".  It could place an AAAA record for
+  "www.example.org" directly into the specially crafted root zone, with a
   corresponding RRSIG signed by the root DNSKEY itself.  Validating
   resolvers would find this record perfectly acceptable, as it was
   signed by a key within the proper chain of trust (in this case, a
@@ -129,21 +132,6 @@ the DELEGATION_ONLY policy as BOGUS.
   present.  Since the creation of the DNS, it has always been possible
   to serve "split zones".  Specifically, it is not a problem created by DNSSEC
   -- DNSSEC was not designed to protect against this use case.</t>
-
-<!--
-<t> Old text that is hard to parse; leaving it for now maybe trying to
-wrap it in:
-Even if resolvers
-would defend against this attack by not allowing RRSIG's to span
-across a potential zone cut, the zone operator (any level higher in
-the hierarchy than the target victim) could briefly remove the NS and
-DS records, and create a "legitimate" DNS entry for "www.example.org",
-hiding the normal zone cuts.  The attacker can then publish DNS
-addresses records (e.g. A and AAAA records), as well as records used
-for authentication (e.g. TLSA, SMIME, OPENPGPKEY, SSHP or IPSECKEY
-records).
- </t>
--->
 
 <t>
 Exposing such targeted attacks requires a transparency audit
@@ -194,7 +182,7 @@ underneath a marked delegation-only zone get the added benefit of
 knowing their parent will not (and cannot) sign DNS records within the
 child's portion of the DNS tree using the marked DNSKEY.</t>
 
-<t>Validating Resolver: A validating that supports verifying the
+<t>Validating Resolver: A validating resolver that supports verifying the
 DELEGATION_ONLY flag is capable of rejecting or discarding any data
 from an authoritative parent that incorrectly signs non-delegation
 records too low in the DNS tree.  If the validating resolver supports
@@ -231,12 +219,13 @@ anchor update in all validating resolvers.</t>
 <t>
 This document introduces a new DNSKEY flag called DELEGATION_ONLY. When
 this flag is set on a DNSKEY with its Secure Entry Point (SEP) flag set,
-the zone owner commits to not sign any data that crosses a label down
-in the hierarchy. This commits a parent in the DNS hierarchy to only
+the zone commits to only produce Authoritative Answers for the apex
+(and _underscore label) records. Note that DS records and its DNSSEC
+signatures are still allowed as this data is authoritative at the parent,
+not the child. This commits a parent in the DNS hierarchy to only
 publish signed DS records and unsigned glue records (NS and A/AAAA) for
 its child zones. It will no longer be able to ignore (or briefly delete,
-see below) a child delegation and publish data crossing zone labels by
-pretending the next label is not a zone cut.
+see below) a child delegation and publish authoritative data in its place.
 </t>
 <!-- one implication: a zone supporting this must place its own NS
      record referrals into sub-zones (or other zones) -->
@@ -315,7 +304,7 @@ bypassing its DELEGATION_ONLY flag.
      DNSSEC Transparency clients to start monitoring for actions by the
      zone or its parents that would be bypassing the DELEGATION_ONLY
      policy of the zone. Validating resolvers would mark any data in
-     violation of the DELEGATION_ONLY policy as BOGUS.
+     violation of the DELEGATION_ONLY policy as Bogus.
      </t>
 
      <section title="Marking the Root DNSKEY DELEGATION_ONLY">
@@ -364,7 +353,7 @@ If a zone is publishing glue records for a number of zones, and the
 zone that contains the authoritative records for this glue is deleted,
 a resigning of the zone will make this orphaned glue authoritative within
 the zone. However, with the DELEGATION_ONLY flag set, this (signed) DNSSEC
-data will be considered BOGUS as it violations the commitment to only
+data will be considered Bogus as it violations the commitment to only
 delegate. This may impact domains that depended on this unsigned glue. Note
 that glue handling differs per zone. Some TLDs already remove the glue records
 if no authoritative child is left in its zone that matches these glue
@@ -378,21 +367,15 @@ and the previously unsigned glue of "ns.example.net" is now signed by the
 to resolve.
 </t>
 <t>
-If a domain uses Empty Non Terminals (ENT), that is uses multiple labels
-where the label is not covered by its own delegation, then the
-DELEGATION_ONLY flag cannot be set. For example, some domains allow
-registrations straight into their zone (eg "child.example") while
-others use an ENT to categorize these (eg "child.co.example" and
-"child.ac.example"). Some TLDs contain a few ENTs marking some
-administrative or geographic region. Such TLDs must first migrate
-their ENT to fully delegated child zones before enabling the
-DELEGATION_ONLY flag.
+The use of Empty Non Terminals (ENT) is fine, as long as the ENT's ends in
+a proper delegation with NS (and hopefully DS) records.
 </t>
 <t>
 Some TLDs publish their nameserver (NS) records straight within their
 TLD (eg "ns1.example") which makes these names indistinguishable from
 real delegations with respect to the DELEGATION_ONLY flag. These NS
 entries would have to be moved to their own delegation zone (eg "ns1.nic.example")
+which in itself cannot be a DELEGATION_ONLY zone.
 </t>
 <t>
 Some TLDs have a requirement for certain Fully Qualified Domain Names (FQDN)
@@ -416,6 +399,15 @@ cache is empty. Care should be taken by resolvers to not unnecessarily
 empty their cache. This is specifically important for roaming clients
 that re-connect frequently to different wireless or mobile data networks.
 </t>
+<t>Resolvers should be aware of DELEGATION_ONLY status of a parental domain
+and not consume Authoritative or Additional sections with data that is placed
+to attempt to bypass the DELEGATION_ONLY restriction. If "example.org" is a
+DELEGATION_ONLY zone, and a query for "www.example.org" results in non-authoritative
+data for A records for "www.example.org" or "mail.example.org", these records should
+be rejected as Bogus, irrespective of whether these were signed by the appropriate
+"example.org" DNSSEC key.
+</t>
+
 <t>This DELEGATION_ONLY mechanism is not designed to completely foil
 attacks (since parent's can simply change a child's referral data),
 but rather to empower transparency logging mechanisms.</t>
@@ -469,7 +461,7 @@ value [TBD] has been allocated by IANA from the DNSKEY FLAGS Registry.
 The authors wishes to thank Thomas H. Ptacek for his insistence on this matter.
 </t>
 <t>Thanks to the following IETF participants: Viktor Dukhovni, Shumon Huque, Geoff Huston,
-Rick Lamb and Sam Weiler.</t>
+Rick Lamb Sam Weiler and Paul Vixie.</t>
 </section>
 
   </middle>
