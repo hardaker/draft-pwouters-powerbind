@@ -130,14 +130,15 @@ any data that violates the DELEGATION_ONLY policy as Bogus.
 
   <t>It is important to note that this "feature" has always been
   present.  Since the creation of the DNS, it has always been possible
-  to serve "split zones".  Specifically, it is not a problem created by DNSSEC
+  to serve different "views" of the same zone name to different clients.
+  Specifically, it is not a problem created by DNSSEC
   -- DNSSEC was not designed to protect against this use case.</t>
 
 <t>
 Exposing such targeted attacks requires a transparency audit
 infrastructure similar to what is deployed for PKIX (<xref
 target="RFC6962" />).  However, a DNSSEC version would need to log significantly
-more data, as all signed DNS data used by a DNSKEY must be recorded in
+more data, as all signed DNS data signed by a DNSKEY must be recorded in
 order to prove that data signed by a parent zone's DNSKEY was out of
 expected policy. The very distributed nature of the DNS combined with the
 typically frequent zone resigning rate makes such
@@ -154,7 +155,7 @@ participating in such a system.
 </t>
 
 <t>Furthermore, there is no signalling mechanism that lets validating
-resolvers know which zones are supposedly delegation-only, and what
+resolvers know which zones are supposedly delegation-only and what
 zones can be logged.  Today there are over 1500 TLDs in
 the root zone, some of which may be considered delegation-only while
 others may not be.  At the time of this writing, the list of entries
@@ -218,14 +219,15 @@ anchor update in all validating resolvers.</t>
 <section title="The DELEGATION_ONLY DNSKEY flag">
 <t>
 This document introduces a new DNSKEY flag called DELEGATION_ONLY. When
-this flag is set on a DNSKEY with its Secure Entry Point (SEP) flag set,
-the zone commits to only produce Authoritative Answers for the apex
-(and _underscore label) records. Note that DS records and its DNSSEC
-signatures are still allowed as this data is authoritative at the parent,
-not the child. This commits a parent in the DNS hierarchy to only
-publish signed DS records and unsigned glue records (NS and A/AAAA) for
-its child zones. It will no longer be able to ignore (or briefly delete,
-see below) a child delegation and publish authoritative data in its place.
+this flag is set on a DNSKEY that is a trust anchor with a corresponding
+DS record at its parent, the zone commits to only produce Authoritative
+Answers for the apex (and _underscore label) records. Note that DS
+records and its DNSSEC signatures are still allowed as this data is
+authoritative at the parent, not the child. This commits a parent in
+the DNS hierarchy to only publish signed DS records and unsigned glue
+records (NS and A/AAAA) for its child zones. It will no longer be able
+to ignore (or briefly delete, see below) a child delegation and publish
+authoritative data in its place.
 </t>
 <!-- one implication: a zone supporting this must place its own NS
      record referrals into sub-zones (or other zones) -->
@@ -320,8 +322,8 @@ bypassing its DELEGATION_ONLY flag.
 
      <section title="Migrating to and from DELEGATION_ONLY">
      <t>
-     There might be multiple DNSKEYs with the SEP flag set in a
-     zone. For the purpose of declaring a zone as DELEGATION_ONLY,
+     There might be multiple DNSKEY records that are suitable to act as
+     a trustanchor for a zone. For the purpose of declaring a zone as DELEGATION_ONLY,
      only those DNSKEY's that have a corresponding DS record at the
      parent MUST be considered. If multiple DS records appear at the
      parent, some of which point to DNSKEYs with and some of which point to DNSKEYs without the
